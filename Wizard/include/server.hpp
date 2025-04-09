@@ -78,6 +78,7 @@ namespace Comunicacion
                 }
 
                 std::string mensaje(data, length);
+                mensaje.pop_back();
                 if (mensaje.empty())
                 {
                     asio::write(sock, asio::buffer("Mensaje vacío, pibe... \n"));
