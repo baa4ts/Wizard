@@ -94,7 +94,7 @@ namespace Comunicacion
                         continue;
                     }
 
-                    asio::write(sock, asio::buffer(" - - Shell Desactivado - - "));
+                    asio::write(sock, asio::buffer(" - - Shell Desactivado - - \n"));
                 }
                 else
                 {
