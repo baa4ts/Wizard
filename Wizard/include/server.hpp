@@ -84,21 +84,26 @@ namespace Comunicacion
                 }
                 else
                 {
-                    if (mensaje.find("exit") != std::string::npos)
-                    {
-                        break;
-                    }
 
-                    std::string resultado;
-                    if (PowerShell(mensaje, resultado))
-                    {
-                        std::string msg = "\n - - - - - Inicio - - - - -\n" + resultado + "\n - - - - - Final  - - - - -\n@bin> ";
-                        asio::write(sock, asio::buffer(msg));
-                    }
-                    else
-                    {
-                        asio::write(sock, asio::buffer("Error ejecutando PowerShell\n@bin> "));
-                    }
+                    std::string msg = "Mensaje: " + mensaje + "\n Size: " + std::to_string(mensaje.size());
+                    asio::write(sock, asio::buffer(msg));
+
+                    // if (mensaje.find("exit") != std::string::npos)
+                    // {
+                    //     asio::write(sock, asio::buffer(" - Cerrando - \n"));
+                    //     break;
+                    // }
+
+                    // std::string resultado;
+                    // if (PowerShell(mensaje, resultado))
+                    // {
+                    //     std::string msg = "\n - - - - - Inicio - - - - -\n" + resultado + "\n - - - - - Final  - - - - -\n@bin> ";
+                    //     asio::write(sock, asio::buffer(msg));
+                    // }
+                    // else
+                    // {
+                    //     asio::write(sock, asio::buffer("Error ejecutando PowerShell\n@bin> "));
+                    // }
                 }
             }
         }
