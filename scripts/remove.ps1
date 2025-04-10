@@ -37,7 +37,7 @@ try {
 catch {}
 
 try {
-    sc.exe delete wizard
+    sc.exe delete $servicio
 }
 catch {
     
