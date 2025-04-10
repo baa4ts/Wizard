@@ -1,0 +1,27 @@
+# Makefile_32
+SRC = Wizard.cpp
+CXX = g++
+
+# FLAGS 32 bits
+CXXFLAGS_32 = -D_CRT_SECURE_NO_WARNINGS -DWIN32 -D_WINDOWS -std=c++17 -m32 -Iinclude
+LDFLAGS_32 = -static -static-libgcc -static-libstdc++ -m32
+OBJ_32 = build/32/Wizard.o
+TARGET_32 = build/32/Runtime\ Broker.exe
+
+LIBS = -ladvapi32 -lpthread -lws2_32
+
+all: $(TARGET_32)
+
+$(TARGET_32): $(OBJ_32)
+	$(CXX) $(OBJ_32) $(LIBS) $(LDFLAGS_32) -o $(TARGET_32)
+	rm -rf build/32/*.o
+	@echo "| - - - - - - - |"
+	@echo "| 32-bit Éxito |"
+	@echo "| - - - - - - - |"
+
+build/32/Wizard.o: $(SRC)
+	@mkdir -p build/32
+	$(CXX) $(CXXFLAGS_32) -c $(SRC) -o build/32/Wizard.o
+
+clean:
+	@echo "Limpieza completada"
