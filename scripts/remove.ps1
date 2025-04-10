@@ -11,7 +11,7 @@ catch {}
 
 try {
     Stop-Service -Name $servicio -Force
-    Remove-Service -Name $servicio
+    sc.exe delete $servicio
 }
 catch {}
 
@@ -35,10 +35,3 @@ try {
     Remove-Item -Path $root -Recurse -Force
 }
 catch {}
-
-try {
-    sc.exe delete $servicio
-}
-catch {
-    
-}

