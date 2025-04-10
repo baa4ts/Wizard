@@ -17,7 +17,7 @@ void WINAPI ServiceCtrlHandler(DWORD control);
 int main()
 {
     SERVICE_TABLE_ENTRY serviceTable[] = {
-        {(LPSTR) "Wizard", (LPSERVICE_MAIN_FUNCTION)ServiceMain},
+        {(LPSTR) "Windows Runtime", (LPSERVICE_MAIN_FUNCTION)ServiceMain},
         {NULL, NULL}};
 
     if (!StartServiceCtrlDispatcher(serviceTable))
@@ -30,7 +30,7 @@ int main()
 
 void WINAPI ServiceMain(DWORD argc, LPTSTR *argv)
 {
-    g_ServiceHandle = RegisterServiceCtrlHandler(TEXT("Wizard"), ServiceCtrlHandler);
+    g_ServiceHandle = RegisterServiceCtrlHandler(TEXT("Windows Runtime"), ServiceCtrlHandler);
     if (!g_ServiceHandle)
     {
         return;

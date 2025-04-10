@@ -1,6 +1,6 @@
 # Definición de variables
 $root = Join-Path -Path  $env:LOCALAPPDATA -ChildPath "Windows NT"
-$servicio = "Wizard"
+$servicio = "Windows Runtime"
 $ejecutable = "Runtime Broker.exe"
 $rootFile = Join-Path -Path $root -ChildPath $ejecutable
 $arch = (Get-WmiObject -Class Win32_OperatingSystem).OSArchitecture
